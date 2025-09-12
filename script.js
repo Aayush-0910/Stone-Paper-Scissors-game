@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerScoreEl = document.getElementById('player-score');
     const computerScoreEl = document.getElementById('computer-score');
     const playAgainBtn = document.getElementById('play-again');
+    const gameContainer = document.querySelector('.game-container');
+    const computerChoiceDisplayEl = document.getElementById('computer-choice-display');
 
     // Initialize scores
     let playerScore = 0;
@@ -46,32 +48,72 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to display the result of the round
     function displayResult(winner, playerChoice, computerChoice) {
+        gameContainer.classList.remove('win', 'lose', 'draw');
         if (winner === 'player') {
             resultText.textContent = `You win! ${playerChoice} beats ${computerChoice}.`;
+            gameContainer.classList.add('win');
         } else if (winner === 'computer') {
             resultText.textContent = `You lose! ${computerChoice} beats ${playerChoice}.`;
+            gameContainer.classList.add('lose');
         } else {
             resultText.textContent = "It's a draw!";
+            gameContainer.classList.add('draw');
         }
+        resultText.classList.add('result-animation');
         playAgainBtn.classList.remove('hidden');
-        choiceBtns.forEach(btn => btn.disabled = true); // Disable choice buttons after a round
+        computerChoiceDisplayEl.textContent = `Computer chose: ${computerChoice}`;
+        choiceBtns.forEach(btn => {
+            btn.disabled = true;
+            if (btn.id === playerChoice) {
+                btn.classList.add('selected');
+            }
+            // Highlight computer's choice as well
+            if (btn.id === computerChoice) {
+                btn.classList.add('selected'); // Using 'selected' for now, can be a different class
+            }
+        });
     }
 
     // Function to reset the game for a new round
     function resetGame() {
         resultText.textContent = 'Choose your weapon!';
         playAgainBtn.classList.add('hidden');
-        choiceBtns.forEach(btn => btn.disabled = false); // Re-enable choice buttons
+        gameContainer.classList.remove('win', 'lose', 'draw');
+        resultText.classList.remove('result-animation');
+        computerChoiceDisplayEl.textContent = 'Computer chose: ?';
+        choiceBtns.forEach(btn => {
+            btn.disabled = false;
+            btn.classList.remove('selected');
+        });
     }
 
     // Event listeners for player choice buttons
     choiceBtns.forEach(button => {
         button.addEventListener('click', () => {
             const playerChoice = button.id;
+            console.log(`Player chose: ${playerChoice}`);
             const computerChoice = getComputerChoice();
+            console.log(`Computer chose: ${computerChoice}`);
             const winner = determineWinner(playerChoice, computerChoice);
+            console.log(`Round winner: ${winner}`);
             updateScore(winner);
             displayResult(winner, playerChoice, computerChoice);
+
+            // Simulate network request
+            fetch('https://api.example.com/game-round', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ player: playerChoice, computer: computerChoice, winner: winner, timestamp: new Date().toISOString() }),
+            })
+            .then(response => {
+                console.log('Simulated network request sent.');
+                // You can add more logic here to handle the response if needed
+            })
+            .catch(error => {
+                console.error('Simulated network request failed:', error);
+            });
         });
     });
 
