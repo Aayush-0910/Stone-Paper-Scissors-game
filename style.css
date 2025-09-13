@@ -1,8 +1,9 @@
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Poppins', sans-serif;
     background: linear-gradient(135deg, #6dd5ed, #2193b0);
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
     min-height: 100vh;
     margin: 0;
@@ -26,7 +27,7 @@ body {
 }
 
 h1 {
-    color: #2193b0;
+    color: white;
     margin-bottom: 1.5rem;
     font-size: 2.5rem;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
@@ -140,3 +141,67 @@ h1 {
     color: #555;
     min-height: 1.5rem;
 }
+
+@keyframes revealChoice {
+    0% { opacity: 0; transform: translateY(-10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+#computer-choice-display.revealed {
+    animation: revealChoice 0.5s ease-out forwards;
+}
+
+@keyframes scoreUpdate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); color: #ff9800; }
+    100% { transform: scale(1); }
+}
+
+.score-update-animation {
+    animation: scoreUpdate 0.5s ease-in-out;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .game-container {
+        padding: 2rem;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    .choices {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .choice-btn {
+        width: 100px;
+        height: 100px;
+        font-size: 3rem;
+    }
+
+    #result {
+        font-size: 1.5rem;
+    }
+
+    #play-again {
+        padding: 0.8rem 1.5rem;
+        font-size: 1rem;
+    }
+}
+
+header {
+    width: 100%;
+    text-align: center;
+    padding: 1rem 0;
+}
+
+footer {
+    width: 100%;
+    text-align: center;
+    padding: 1rem 0;
+    color: white;
+}
+

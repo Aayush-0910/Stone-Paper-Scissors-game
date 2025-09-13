@@ -3,12 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A simple and fun Stone Paper Scissors game.">
     <title>Stone Paper Scissors</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:;base64,iVBORw0KGgo="> <!-- Placeholder favicon -->
 </head>
 <body>
-    <div class="game-container">
+    <header>
         <h1>Stone Paper Scissors</h1>
+    </header>
+
+    <main class="game-container">
         <div class="score-board">
             <p>Player: <span id="player-score">0</span></p>
             <p>Computer: <span id="computer-score">0</span></p>
@@ -21,7 +29,12 @@
         <p id="computer-choice-display">Computer chose: ?</p>
         <p id="result">Choose your weapon!</p>
         <button id="play-again" class="hidden">Play Again</button>
-    </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Stone Paper Scissors Game</p>
+    </footer>
+
     <script src="script.js"></script>
 </body>
 </html>

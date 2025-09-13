@@ -83,15 +83,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (winner === 'player') {
             playerScore++;
             playerScoreEl.textContent = playerScore;
+            playerScoreEl.parentElement.classList.add('score-update-animation');
         } else if (winner === 'computer') {
             computerScore++;
             computerScoreEl.textContent = computerScore;
+            computerScoreEl.parentElement.classList.add('score-update-animation');
         }
+
+        // Remove the animation class after it finishes
+        setTimeout(() => {
+            playerScoreEl.parentElement.classList.remove('score-update-animation');
+            computerScoreEl.parentElement.classList.remove('score-update-animation');
+        }, 500);
     }
 
     // Function to display the result of the round
     function displayResult(winner, playerChoice, computerChoice) {
         gameContainer.classList.remove('win', 'lose', 'draw');
+        computerChoiceDisplayEl.classList.remove('revealed'); // Reset animation class
+
         if (winner === 'player') {
             resultText.textContent = `You win! ${playerChoice} beats ${computerChoice}.`;
             gameContainer.classList.add('win');
@@ -107,7 +117,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         resultText.classList.add('result-animation');
         playAgainBtn.classList.remove('hidden');
-        computerChoiceDisplayEl.textContent = `Computer chose: ${computerChoice}`;
+        
+        // Animate the computer choice display
+        setTimeout(() => {
+            computerChoiceDisplayEl.textContent = `Computer chose: ${computerChoice}`;
+            computerChoiceDisplayEl.classList.add('revealed');
+        }, 100);
+
         choiceBtns.forEach(btn => {
             btn.disabled = true;
             if (btn.id === playerChoice) {
@@ -127,6 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gameContainer.classList.remove('win', 'lose', 'draw');
         resultText.classList.remove('result-animation');
         computerChoiceDisplayEl.textContent = 'Computer chose: ?';
+        computerChoiceDisplayEl.classList.remove('revealed'); // Reset animation class
         choiceBtns.forEach(btn => {
             btn.disabled = false;
             btn.classList.remove('selected');
