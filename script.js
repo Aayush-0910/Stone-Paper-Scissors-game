@@ -1,186 +1,240 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("script.js loaded and DOM fully parsed.");
-
-    // Web Audio API setup
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-    // Sound generation functions
-    function playSound(type) {
-        if (!audioContext) return;
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.5, audioContext.currentTime + 0.01);
-
-        switch (type) {
-            case 'click':
-                oscillator.type = 'triangle';
-                oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.2);
-                break;
-            case 'win':
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
-                oscillator.frequency.linearRampToValueAtTime(1046.50, audioContext.currentTime + 0.2); // C6
-                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
-                break;
-            case 'lose':
-                oscillator.type = 'sawtooth';
-                oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4
-                oscillator.frequency.linearRampToValueAtTime(220, audioContext.currentTime + 0.3); // A3
-                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.4);
-                break;
-            case 'draw':
-                oscillator.type = 'square';
-                oscillator.frequency.setValueAtTime(349.23, audioContext.currentTime); // F4
-                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.2);
-                break;
-        }
-
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.5);
-    }
-
-    // Game choices and DOM elements
-    const choices = ['stone', 'paper', 'scissors'];
-    const choiceBtns = document.querySelectorAll('.choice-btn');
-    const resultText = document.getElementById('result');
+    // --- DOM Elements ---
+    const modal = document.getElementById('modal-instructions');
+    const helpButton = document.getElementById('help-button');
+    const closeButton = document.querySelector('.close-button');
+    const seriesWinnerBanner = document.getElementById('series-winner-banner');
+    const seriesWinnerText = document.getElementById('series-winner-text');
+    const themeSwitcher = document.getElementById('theme-switcher-container');
+    const playerNameInput = document.getElementById('player-name');
+    const playerNameDisplay = document.getElementById('player-name-display');
+    const gameModeSelect = document.getElementById('game-mode');
     const playerScoreEl = document.getElementById('player-score');
     const computerScoreEl = document.getElementById('computer-score');
-    const playAgainBtn = document.getElementById('play-again');
-    const gameContainer = document.querySelector('.game-container');
+    const choiceCards = document.querySelectorAll('.choice-card');
+    const resultText = document.getElementById('result');
     const computerChoiceDisplayEl = document.getElementById('computer-choice-display');
+    const playAgainBtn = document.getElementById('play-again');
+    const historyList = document.getElementById('history-list');
 
-    // Initialize scores
-    let playerScore = 0;
-    let computerScore = 0;
+    // --- Game State ---
+    let state = {
+        playerName: 'Player 1',
+        playerScore: 0,
+        computerScore: 0,
+        history: []
+    };
+    let gameMode = 'endless';
+    let playerSeriesScore = 0;
+    let computerSeriesScore = 0;
 
-    // Function to get computer's random choice
+    // --- API Configuration ---
+    const apiUrl = 'http://localhost:3000/api/game_state';
+
+    // --- Initialization ---
+    async function initialize() {
+        await loadStateFromServer();
+        updateUIFromState();
+        addEventListeners();
+        checkFirstVisit();
+    }
+
+    // --- Event Listeners ---
+    function addEventListeners() {
+        helpButton.addEventListener('click', () => modal.style.display = 'block');
+        closeButton.addEventListener('click', () => modal.style.display = 'none');
+        window.addEventListener('click', (e) => {
+            if (e.target == modal) modal.style.display = 'none';
+        });
+        themeSwitcher.addEventListener('click', toggleTheme);
+        playerNameInput.addEventListener('change', updatePlayerName);
+        gameModeSelect.addEventListener('change', changeGameMode);
+        choiceCards.forEach(card => card.addEventListener('click', handleChoiceClick));
+        playAgainBtn.addEventListener('click', resetRound);
+    }
+
+    // --- State Management (with API) ---
+    async function loadStateFromServer() {
+        try {
+            const response = await fetch(apiUrl);
+            state = await response.json();
+        } catch (error) {
+            console.error('Error loading game state:', error);
+        }
+    }
+
+    async function saveStateToServer() {
+        try {
+            await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(state),
+            });
+        } catch (error) {
+            console.error('Error saving game state:', error);
+        }
+    }
+
+    // --- UI Updates ---
+    function updateUIFromState() {
+        playerNameInput.value = state.playerName;
+        playerNameDisplay.textContent = state.playerName;
+        playerScoreEl.textContent = state.playerScore;
+        computerScoreEl.textContent = state.computerScore;
+        updateHistory();
+    }
+    
+    function checkFirstVisit() {
+        if (!localStorage.getItem('visited')) {
+            modal.style.display = 'block';
+            localStorage.setItem('visited', 'true');
+        }
+    }
+
+    function toggleTheme() {
+        const isLightTheme = document.body.classList.contains('light-theme');
+        const newTheme = isLightTheme ? 'dark' : 'light';
+        document.body.className = newTheme + '-theme';
+        localStorage.setItem('theme', newTheme);
+    }
+
+    function updatePlayerName(e) {
+        state.playerName = e.target.value;
+        playerNameDisplay.textContent = state.playerName;
+        saveStateToServer();
+    }
+
+    function updateHistory() {
+        historyList.innerHTML = '';
+        state.history.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item;
+            historyList.appendChild(li);
+        });
+    }
+
+    // --- Game Logic ---
+    function changeGameMode(e) {
+        gameMode = e.target.value;
+        resetGame();
+    }
+
+    function handleChoiceClick(e) {
+        const playerChoice = e.currentTarget.id;
+        const computerChoice = getComputerChoice();
+        const winner = determineWinner(playerChoice, computerChoice);
+
+        updateScores(winner);
+        displayResult(winner, playerChoice, computerChoice);
+        addHistory(winner, playerChoice, computerChoice);
+        saveStateToServer();
+    }
+
     function getComputerChoice() {
+        const choices = ['stone', 'paper', 'scissors'];
         return choices[Math.floor(Math.random() * choices.length)];
     }
 
-    // Function to determine the winner of a round
-    function determineWinner(playerChoice, computerChoice) {
-        if (playerChoice === computerChoice) {
-            return 'dr';
-        }
+    function determineWinner(player, computer) {
+        if (player === computer) return 'draw';
         if (
-            (playerChoice === 'stone' && computerChoice === 'scissors') ||
-            (playerChoice === 'paper' && computerChoice === 'stone') ||
-            (playerChoice === 'scissors' && computerChoice === 'paper')
+            (player === 'stone' && computer === 'scissors') ||
+            (player === 'paper' && computer === 'stone') ||
+            (player === 'scissors' && computer === 'paper')
         ) {
             return 'player';
         }
         return 'computer';
     }
 
-    // Function to update the score display
-    function updateScore(winner) {
-        if (winner === 'player') {
-            playerScore++;
-            playerScoreEl.textContent = playerScore;
-            playerScoreEl.parentElement.classList.add('score-update-animation');
-        } else if (winner === 'computer') {
-            computerScore++;
-            computerScoreEl.textContent = computerScore;
-            computerScoreEl.parentElement.classList.add('score-update-animation');
-        }
+    function updateScores(winner) {
+        if (winner === 'player') state.playerScore++;
+        if (winner === 'computer') state.computerScore++;
+        updateScoreboard();
 
-        // Remove the animation class after it finishes
-        setTimeout(() => {
-            playerScoreEl.parentElement.classList.remove('score-update-animation');
-            computerScoreEl.parentElement.classList.remove('score-update-animation');
-        }, 500);
+        if (gameMode !== 'endless') {
+            if (winner === 'player') playerSeriesScore++;
+            if (winner === 'computer') computerSeriesScore++;
+            checkSeriesWinner();
+        }
     }
 
-    // Function to display the result of the round
+    function updateScoreboard() {
+        playerScoreEl.textContent = state.playerScore;
+        computerScoreEl.textContent = state.computerScore;
+    }
+
     function displayResult(winner, playerChoice, computerChoice) {
-        gameContainer.classList.remove('win', 'lose', 'draw');
-        computerChoiceDisplayEl.classList.remove('revealed'); // Reset animation class
+        let resultString = "It's a draw!";
+        if (winner === 'player') resultString = `${state.playerName} wins!`;
+        if (winner === 'computer') resultString = `Computer wins!`;
 
-        if (winner === 'player') {
-            resultText.textContent = `You win! ${playerChoice} beats ${computerChoice}.`;
-            gameContainer.classList.add('win');
-            playSound('win');
-        } else if (winner === 'computer') {
-            resultText.textContent = `You lose! ${computerChoice} beats ${playerChoice}.`;
-            gameContainer.classList.add('lose');
-            playSound('lose');
-        } else {
-            resultText.textContent = "It's a draw!";
-            gameContainer.classList.add('draw');
-            playSound('draw');
-        }
-        resultText.classList.add('result-animation');
+        resultText.textContent = resultString;
+        computerChoiceDisplayEl.textContent = `Computer chose ${computerChoice}.`;
+        choiceCards.forEach(card => {
+            card.style.pointerEvents = 'none';
+            if (winner !== 'draw' && (card.id === playerChoice || card.id === computerChoice)) {
+                if ((winner === 'player' && card.id === playerChoice) || (winner === 'computer' && card.id === computerChoice)) {
+                    card.classList.add('winner-glow');
+                }
+            }
+        });
         playAgainBtn.classList.remove('hidden');
-        
-        // Animate the computer choice display
-        setTimeout(() => {
-            computerChoiceDisplayEl.textContent = `Computer chose: ${computerChoice}`;
-            computerChoiceDisplayEl.classList.add('revealed');
-        }, 100);
-
-        choiceBtns.forEach(btn => {
-            btn.disabled = true;
-            if (btn.id === playerChoice) {
-                btn.classList.add('selected');
-            }
-            // Highlight computer's choice as well
-            if (btn.id === computerChoice) {
-                btn.classList.add('selected'); // Using 'selected' for now, can be a different class
-            }
-        });
+    }
+    
+    function addHistory(winner, playerChoice, computerChoice) {
+        const resultString = winner === 'draw' ? 'Draw' : winner === 'player' ? `${state.playerName} won` : 'Computer won';
+        state.history.unshift(`${resultString} (${playerChoice} vs ${computerChoice})`);
+        if (state.history.length > 5) state.history.pop();
+        updateHistory();
     }
 
-    // Function to reset the game for a new round
-    function resetGame() {
-        resultText.textContent = 'Choose your weapon!';
+    function checkSeriesWinner() {
+        const seriesLimit = gameMode === 'bestOf5' ? 3 : 4;
+        if (playerSeriesScore === seriesLimit) {
+            endSeries(state.playerName);
+        } else if (computerSeriesScore === seriesLimit) {
+            endSeries('Computer');
+        }
+    }
+
+    function endSeries(winner) {
+        seriesWinnerText.textContent = `${winner} wins the series!`;
+        seriesWinnerBanner.classList.remove('hidden');
+        choiceCards.forEach(card => card.style.pointerEvents = 'none');
+        playAgainBtn.textContent = 'New Game';
+    }
+
+    function resetRound() {
+        resultText.textContent = 'Make your move!';
+        computerChoiceDisplayEl.textContent = '';
+        choiceCards.forEach(card => {
+            card.style.pointerEvents = 'auto';
+            card.classList.remove('winner-glow');
+        });
         playAgainBtn.classList.add('hidden');
-        gameContainer.classList.remove('win', 'lose', 'draw');
-        resultText.classList.remove('result-animation');
-        computerChoiceDisplayEl.textContent = 'Computer chose: ?';
-        computerChoiceDisplayEl.classList.remove('revealed'); // Reset animation class
-        choiceBtns.forEach(btn => {
-            btn.disabled = false;
-            btn.classList.remove('selected');
-        });
+
+        if (seriesWinnerBanner.classList.contains('hidden') === false) {
+            resetGame();
+        }
     }
 
-    // Event listeners for player choice buttons
-    choiceBtns.forEach(button => {
-        button.addEventListener('click', () => {
-            playSound('click');
-            const playerChoice = button.id;
-            console.log(`Player chose: ${playerChoice}`);
-            const computerChoice = getComputerChoice();
-            console.log(`Computer chose: ${computerChoice}`);
-            const winner = determineWinner(playerChoice, computerChoice);
-            console.log(`Round winner: ${winner}`);
-            updateScore(winner);
-            displayResult(winner, playerChoice, computerChoice);
+    function resetGame() {
+        state.playerScore = 0;
+        state.computerScore = 0;
+        playerSeriesScore = 0;
+        computerSeriesScore = 0;
+        state.history = [];
+        updateScoreboard();
+        updateHistory();
+        seriesWinnerBanner.classList.add('hidden');
+        playAgainBtn.textContent = 'Play Again';
+        saveStateToServer();
+        resetRound();
+    }
 
-            // Simulate network request
-            fetch('https://api.example.com/game-round', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ player: playerChoice, computer: computerChoice, winner: winner, timestamp: new Date().toISOString() }),
-            })
-            .then(response => {
-                console.log('Simulated network request sent.');
-                // You can add more logic here to handle the response if needed
-            })
-            .catch(error => {
-                console.error('Simulated network request failed:', error);
-            });
-        });
-    });
-
-    // Event listener for the "Play Again" button
-    playAgainBtn.addEventListener('click', resetGame);
+    // --- Initialize ---
+    initialize();
 });
