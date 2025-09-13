@@ -18,23 +18,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyList = document.getElementById('history-list');
 
     // --- Game State ---
-    let state = {
-        playerName: 'Player 1',
-        playerScore: 0,
-        computerScore: 0,
-        history: []
-    };
+    let playerScore = 0;
+    let computerScore = 0;
+    let playerName = 'Player 1';
     let gameMode = 'endless';
     let playerSeriesScore = 0;
     let computerSeriesScore = 0;
-
-    // --- API Configuration ---
-    const apiUrl = 'http://localhost:3000/api/game_state';
+    let history = [];
 
     // --- Initialization ---
-    async function initialize() {
-        await loadStateFromServer();
-        updateUIFromState();
+    function initialize() {
+        loadState();
+        updateScoreboard();
+        updateHistory();
         addEventListeners();
         checkFirstVisit();
     }
@@ -53,39 +49,32 @@ document.addEventListener('DOMContentLoaded', () => {
         playAgainBtn.addEventListener('click', resetRound);
     }
 
-    // --- State Management (with API) ---
-    async function loadStateFromServer() {
-        try {
-            const response = await fetch(apiUrl);
-            state = await response.json();
-        } catch (error) {
-            console.error('Error loading game state:', error);
-        }
+    // --- State Management ---
+    function loadState() {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.body.className = savedTheme + '-theme';
+        document.getElementById('sun-icon').style.display = savedTheme === 'dark' ? 'none' : 'block';
+        document.getElementById('moon-icon').style.display = savedTheme === 'dark' ? 'block' : 'none';
+
+        playerName = localStorage.getItem('playerName') || 'Player 1';
+        playerNameInput.value = playerName;
+        playerNameDisplay.textContent = playerName;
+
+        playerScore = parseInt(localStorage.getItem('playerScore')) || 0;
+        computerScore = parseInt(localStorage.getItem('computerScore')) || 0;
+
+        history = JSON.parse(localStorage.getItem('history')) || [];
     }
 
-    async function saveStateToServer() {
-        try {
-            await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(state),
-            });
-        } catch (error) {
-            console.error('Error saving game state:', error);
-        }
+    function saveState() {
+        localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+        localStorage.setItem('playerName', playerName);
+        localStorage.setItem('playerScore', playerScore);
+        localStorage.setItem('computerScore', computerScore);
+        localStorage.setItem('history', JSON.stringify(history));
     }
 
-    // --- UI Updates ---
-    function updateUIFromState() {
-        playerNameInput.value = state.playerName;
-        playerNameDisplay.textContent = state.playerName;
-        playerScoreEl.textContent = state.playerScore;
-        computerScoreEl.textContent = state.computerScore;
-        updateHistory();
-    }
-    
+    // --- UI ---
     function checkFirstVisit() {
         if (!localStorage.getItem('visited')) {
             modal.style.display = 'block';
@@ -97,18 +86,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const isLightTheme = document.body.classList.contains('light-theme');
         const newTheme = isLightTheme ? 'dark' : 'light';
         document.body.className = newTheme + '-theme';
-        localStorage.setItem('theme', newTheme);
+        document.getElementById('sun-icon').style.display = isLightTheme ? 'none' : 'block';
+        document.getElementById('moon-icon').style.display = isLightTheme ? 'block' : 'none';
+        saveState();
     }
 
     function updatePlayerName(e) {
-        state.playerName = e.target.value;
-        playerNameDisplay.textContent = state.playerName;
-        saveStateToServer();
+        playerName = e.target.value;
+        playerNameDisplay.textContent = playerName;
+        saveState();
     }
 
     function updateHistory() {
         historyList.innerHTML = '';
-        state.history.forEach(item => {
+        history.forEach(item => {
             const li = document.createElement('li');
             li.textContent = item;
             historyList.appendChild(li);
@@ -129,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateScores(winner);
         displayResult(winner, playerChoice, computerChoice);
         addHistory(winner, playerChoice, computerChoice);
-        saveStateToServer();
+        saveState();
     }
 
     function getComputerChoice() {
@@ -150,8 +141,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateScores(winner) {
-        if (winner === 'player') state.playerScore++;
-        if (winner === 'computer') state.computerScore++;
+        if (winner === 'player') playerScore++;
+        if (winner === 'computer') computerScore++;
         updateScoreboard();
 
         if (gameMode !== 'endless') {
@@ -162,13 +153,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateScoreboard() {
-        playerScoreEl.textContent = state.playerScore;
-        computerScoreEl.textContent = state.computerScore;
+        playerScoreEl.textContent = playerScore;
+        computerScoreEl.textContent = computerScore;
     }
 
     function displayResult(winner, playerChoice, computerChoice) {
         let resultString = "It's a draw!";
-        if (winner === 'player') resultString = `${state.playerName} wins!`;
+        if (winner === 'player') resultString = `${playerName} wins!`;
         if (winner === 'computer') resultString = `Computer wins!`;
 
         resultText.textContent = resultString;
@@ -185,16 +176,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function addHistory(winner, playerChoice, computerChoice) {
-        const resultString = winner === 'draw' ? 'Draw' : winner === 'player' ? `${state.playerName} won` : 'Computer won';
-        state.history.unshift(`${resultString} (${playerChoice} vs ${computerChoice})`);
-        if (state.history.length > 5) state.history.pop();
+        const resultString = winner === 'draw' ? 'Draw' : winner === 'player' ? `${playerName} won` : 'Computer won';
+        history.unshift(`${resultString} (${playerChoice} vs ${computerChoice})`);
+        if (history.length > 5) history.pop();
         updateHistory();
     }
 
     function checkSeriesWinner() {
         const seriesLimit = gameMode === 'bestOf5' ? 3 : 4;
         if (playerSeriesScore === seriesLimit) {
-            endSeries(state.playerName);
+            endSeries(playerName);
         } else if (computerSeriesScore === seriesLimit) {
             endSeries('Computer');
         }
@@ -222,16 +213,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function resetGame() {
-        state.playerScore = 0;
-        state.computerScore = 0;
+        playerScore = 0;
+        computerScore = 0;
         playerSeriesScore = 0;
         computerSeriesScore = 0;
-        state.history = [];
+        history = [];
         updateScoreboard();
         updateHistory();
         seriesWinnerBanner.classList.add('hidden');
         playAgainBtn.textContent = 'Play Again';
-        saveStateToServer();
+        saveState();
         resetRound();
     }
 
