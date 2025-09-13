@@ -1,6 +1,49 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log("script.js loaded and DOM fully parsed.");
 
+    // Web Audio API setup
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Sound generation functions
+    function playSound(type) {
+        if (!audioContext) return;
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.5, audioContext.currentTime + 0.01);
+
+        switch (type) {
+            case 'click':
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.2);
+                break;
+            case 'win':
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+                oscillator.frequency.linearRampToValueAtTime(1046.50, audioContext.currentTime + 0.2); // C6
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
+                break;
+            case 'lose':
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4
+                oscillator.frequency.linearRampToValueAtTime(220, audioContext.currentTime + 0.3); // A3
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.4);
+                break;
+            case 'draw':
+                oscillator.type = 'square';
+                oscillator.frequency.setValueAtTime(349.23, audioContext.currentTime); // F4
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.2);
+                break;
+        }
+
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+    }
+
     // Game choices and DOM elements
     const choices = ['stone', 'paper', 'scissors'];
     const choiceBtns = document.querySelectorAll('.choice-btn');
@@ -52,12 +95,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (winner === 'player') {
             resultText.textContent = `You win! ${playerChoice} beats ${computerChoice}.`;
             gameContainer.classList.add('win');
+            playSound('win');
         } else if (winner === 'computer') {
             resultText.textContent = `You lose! ${computerChoice} beats ${playerChoice}.`;
             gameContainer.classList.add('lose');
+            playSound('lose');
         } else {
             resultText.textContent = "It's a draw!";
             gameContainer.classList.add('draw');
+            playSound('draw');
         }
         resultText.classList.add('result-animation');
         playAgainBtn.classList.remove('hidden');
@@ -90,6 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event listeners for player choice buttons
     choiceBtns.forEach(button => {
         button.addEventListener('click', () => {
+            playSound('click');
             const playerChoice = button.id;
             console.log(`Player chose: ${playerChoice}`);
             const computerChoice = getComputerChoice();
