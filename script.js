@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to determine the winner of a round
     function determineWinner(playerChoice, computerChoice) {
         if (playerChoice === computerChoice) {
-            return 'draw';
+            return 'dr';
         }
         if (
             (playerChoice === 'stone' && computerChoice === 'scissors') ||

@@ -1,12 +1,13 @@
 import random
 import os
+import time
 
 # ASCII art for the choices
 ROCK = """
     _______ 
----'   ____
-      (____)
-      (____)
+---'   ____)
+      (_____)
+      (_____)
       (____)
 ---.__(___)
 """
@@ -29,13 +30,62 @@ SCISSORS = """
 ---.__(___)
 """
 
+SHAKE1 = """
+    _______ 
+---'   ____)
+      (_____)
+      (_____)
+      (____)
+---.__(___)
+"""
+
+SHAKE2 = """
+    _______ 
+---'   ____)
+      (_____)
+     (_____)
+      (____)
+---.__(___)
+"""
+
+SHAKE3 = """
+    _______ 
+---'   ____)
+      (_____)
+      (_____)
+     (____)
+---.__(___)
+"""
+
 CHOICES_ART = {"stone": ROCK, "paper": PAPER, "scissors": SCISSORS}
 OPTIONS = ["stone", "paper", "scissors"]
 SCORE_FILE = "scores.txt"
 
+
 def clear_screen():
     """Clears the terminal screen."""
     os.system('cls' if os.name == 'nt' else 'clear')
+
+
+def play_animation():
+    """Displays a countdown and shaking animation."""
+    clear_screen()
+    print("Rock...")
+    time.sleep(0.5)
+    clear_screen()
+    print("Paper...")
+    time.sleep(0.5)
+    clear_screen()
+    print("Scissors...")
+    time.sleep(0.5)
+    clear_screen()
+
+    shaking_hands = [SHAKE1, SHAKE2, SHAKE3]
+    for i in range(3):
+        print(shaking_hands[i % 3])
+        time.sleep(0.2)
+        clear_screen()
+
 
 def get_user_choice():
     """Gets and validates the user's choice."""
@@ -45,23 +95,15 @@ def get_user_choice():
             return user_choice
         print(f"Invalid choice! Please enter one of: {', '.join(OPTIONS)}.")
 
+
 def get_computer_choice():
     """Gets a random choice for the computer."""
     return random.choice(OPTIONS)
 
-def determine_winner(user_choice, computer_choice):
-    """Determines the winner of the round."""
-    if user_choice == computer_choice:
-        return "draw"
-    elif (user_choice == "stone" and computer_choice == "scissors") or \
-         (user_choice == "paper" and computer_choice == "stone") or \
-         (user_choice == "scissors" and computer_choice == "paper"):
-        return "user"
-    else:
-        return "computer"
 
 def display_choices(user_choice, computer_choice):
     """Displays the choices with ASCII art side-by-side."""
+    clear_screen()
     user_art_lines = CHOICES_ART[user_choice].splitlines()
     computer_art_lines = CHOICES_ART[computer_choice].splitlines()
 
@@ -73,6 +115,7 @@ def display_choices(user_choice, computer_choice):
         computer_line = computer_art_lines[i] if i < len(computer_art_lines) else ""
         print(f"{user_line:<25} {computer_line}")
 
+
 def load_scores():
     """Loads player and computer scores from a file."""
     try:
@@ -83,18 +126,31 @@ def load_scores():
     except (FileNotFoundError, ValueError):
         return 0, 0
 
+
 def save_scores(player_score, computer_score):
     """Saves player and computer scores to a file."""
     with open(SCORE_FILE, 'w') as f:
         f.write(str(player_score) + '\n')
         f.write(str(computer_score) + '\n')
 
+
+def determine_winner(user_choice, computer_choice):
+    """Determines the winner of a round."""
+    if user_choice == computer_choice:
+        return "draw"
+    elif (user_choice == "stone" and computer_choice == "scissors") or \
+         (user_choice == "scissors" and computer_choice == "paper") or \
+         (user_choice == "paper" and computer_choice == "stone"):
+        return "user"
+    else:
+        return "desktop"
+
+
 def play_game():
     """Main function to run the game."""
     user_score, computer_score = load_scores()
 
     while True:
-        clear_screen()
         print("==================================================")
         print("         Welcome to Stone, Paper, Scissors!")
         print("==================================================")
@@ -104,6 +160,7 @@ def play_game():
         user_choice = get_user_choice()
         computer_choice = get_computer_choice()
 
+        play_animation()
         display_choices(user_choice, computer_choice)
 
         winner = determine_winner(user_choice, computer_choice)
@@ -129,7 +186,7 @@ def play_game():
 
         if play_again != "yes":
             break
-    
+
     clear_screen()
     print("==================================================")
     print("                 GAME OVER!")
