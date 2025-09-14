@@ -28,11 +28,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initialization ---
     function initialize() {
-        loadState();
+        // Set initial theme to dark
+        document.body.className = 'dark-theme';
+        document.getElementById('sun-icon').style.display = 'none';
+        document.getElementById('moon-icon').style.display = 'block';
+
+        // Set initial player name
+        playerName = 'Player 1';
+        playerNameInput.value = playerName;
+        playerNameDisplay.textContent = playerName;
+
+        // Set initial scores
+        playerScore = 0;
+        computerScore = 0;
+
+        // Clear history
+        history = [];
+
         updateScoreboard();
         updateHistory();
         addEventListeners();
-        checkFirstVisit();
+        checkFirstVisit(); // Modal will always show on first load now
     }
 
     // --- Event Listeners ---
@@ -49,37 +65,11 @@ document.addEventListener('DOMContentLoaded', () => {
         playAgainBtn.addEventListener('click', resetRound);
     }
 
-    // --- State Management ---
-    function loadState() {
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        document.body.className = savedTheme + '-theme';
-        document.getElementById('sun-icon').style.display = savedTheme === 'dark' ? 'none' : 'block';
-        document.getElementById('moon-icon').style.display = savedTheme === 'dark' ? 'block' : 'none';
-
-        playerName = localStorage.getItem('playerName') || 'Player 1';
-        playerNameInput.value = playerName;
-        playerNameDisplay.textContent = playerName;
-
-        playerScore = parseInt(localStorage.getItem('playerScore')) || 0;
-        computerScore = parseInt(localStorage.getItem('computerScore')) || 0;
-
-        history = JSON.parse(localStorage.getItem('history')) || [];
-    }
-
-    function saveState() {
-        localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
-        localStorage.setItem('playerName', playerName);
-        localStorage.setItem('playerScore', playerScore);
-        localStorage.setItem('computerScore', computerScore);
-        localStorage.setItem('history', JSON.stringify(history));
-    }
+    
 
     // --- UI ---
     function checkFirstVisit() {
-        if (!localStorage.getItem('visited')) {
-            modal.style.display = 'block';
-            localStorage.setItem('visited', 'true');
-        }
+        modal.style.display = 'block'; // Always show modal on load
     }
 
     function toggleTheme() {
@@ -88,13 +78,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.className = newTheme + '-theme';
         document.getElementById('sun-icon').style.display = isLightTheme ? 'none' : 'block';
         document.getElementById('moon-icon').style.display = isLightTheme ? 'block' : 'none';
-        saveState();
     }
 
     function updatePlayerName(e) {
         playerName = e.target.value;
         playerNameDisplay.textContent = playerName;
-        saveState();
     }
 
     function updateHistory() {
@@ -120,7 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateScores(winner);
         displayResult(winner, playerChoice, computerChoice);
         addHistory(winner, playerChoice, computerChoice);
-        saveState();
     }
 
     function getComputerChoice() {
@@ -222,7 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateHistory();
         seriesWinnerBanner.classList.add('hidden');
         playAgainBtn.textContent = 'Play Again';
-        saveState();
         resetRound();
     }
 
