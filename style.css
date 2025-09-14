@@ -325,9 +325,7 @@ header .logo h1 {
     height: 80px;
 }
 
-.dark-theme .choice-card img {
-    filter: invert(1);
-}
+
 
 .result-container {
     margin-top: 2rem;
