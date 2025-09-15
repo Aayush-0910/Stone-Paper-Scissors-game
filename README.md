@@ -1,6 +1,6 @@
 # RPS Pro - A Stone, Paper, Scissors Game
 
-This is a professional and engaging web-based implementation of the classic game "Stone, Paper, Scissors". It's built with modern web technologies and features a clean, responsive user interface, and online multiplayer.
+This is a engaging web-based implementation of the classic game "Stone, Paper, Scissors". It's built with modern web technologies and features a clean, responsive user interface, and online multiplayer.
 
 ## Features
 
