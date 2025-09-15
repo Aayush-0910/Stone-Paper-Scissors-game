@@ -1,16 +1,21 @@
 # RPS Pro - A Stone, Paper, Scissors Game
 
-This is a professional and engaging web-based implementation of the classic game "Stone, Paper, Scissors". It's built with modern web technologies and features a clean, responsive user interface.
+This is a professional and engaging web-based implementation of the classic game "Stone, Paper, Scissors". It's built with modern web technologies and features a clean, responsive user interface, and online multiplayer.
 
 ## Features
 
 *   **Light & Dark Themes:** Easily switch between a light and dark theme for your visual comfort.
 *   **Personalized Experience:** Set your player name to appear on the scoreboard.
+*   **Multiple Game Types:**
+    *   **Player vs Computer:** Play against the computer.
+    *   **Player vs Player:** Play against a friend on the same computer.
+    *   **Online:** Play against another player online.
 *   **Multiple Game Modes:**
     *   **Endless:** Play for as long as you like.
+    *   **Best of 3:** The first player to win 2 rounds wins the series.
     *   **Best of 5:** The first player to win 3 rounds wins the series.
     *   **Best of 7:** The first player to win 4 rounds wins the series.
-*   **Persistent State:** Your name, theme preference, scores, and game history are saved in your browser's local storage, so you can pick up where you left off.
+*   **Persistent State:** Your name and theme preference are saved in your browser's local storage.
 *   **Move History:** Keep track of the last few moves made in the game.
 *   **Responsive Design:** The game is designed to work well on both desktop and mobile devices.
 
@@ -19,24 +24,38 @@ This is a professional and engaging web-based implementation of the classic game
 1.  Open the `index.html` file in your web browser.
 2.  A help modal will appear on your first visit, explaining the game.
 3.  Enter your name in the "Player Name" field.
-4.  Select a game mode from the dropdown menu.
+4.  Select a game type and mode from the dropdown menus.
 5.  Click on one of the cards (Stone, Paper, or Scissors) to make your choice.
-6.  The computer will make its choice, and the winner of the round will be displayed.
+6.  The winner of the round will be displayed.
 7.  Click "Play Again" to start the next round.
 
 ## How to Run Locally
 
-To run this project locally, you don't need any special tools or servers. Simply follow these steps:
+To run this project locally, you will need to have Node.js installed.
+
+### For Player vs Computer or Player vs Player:
 
 1.  Clone this repository or download the project files.
 2.  Navigate to the project directory.
 3.  Open the `index.html` file directly in your favorite web browser (e.g., Chrome, Firefox, Edge).
+
+### For Online Play:
+
+1.  Clone this repository or download the project files.
+2.  Navigate to the project directory in your terminal.
+3.  Run `npm install` to install the required dependencies.
+4.  Run `npm start` to start the WebSocket server.
+5.  Open the `index.html` file in your web browser.
+6.  Select the "Online" game type.
+7.  Create a room and share the Room ID with a friend, or join a friend's room using their Room ID.
 
 ## Technologies Used
 
 *   HTML5
 *   CSS3
 *   JavaScript (ES6+)
+*   Node.js
+*   WebSocket
 
 ## License
 
