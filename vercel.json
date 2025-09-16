@@ -1,0 +1,22 @@
+{
+  "builds": [
+    {
+      "src": "api/socket.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/socket",
+      "dest": "api/socket.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
