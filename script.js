@@ -72,7 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- WebSocket ---
     function connectWebSocket() {
-        ws = new WebSocket('ws://localhost:8080');
+        const wsHost = window.location.hostname;
+        ws = new WebSocket(`ws://${wsHost}:8080`);
 
         ws.onopen = () => {
             console.log('Connected to WebSocket server');
