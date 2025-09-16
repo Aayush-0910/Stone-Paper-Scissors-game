@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const playAgainBtn = document.getElementById('play-again');
     const historyList = document.getElementById('history-list');
     const onlineContainer = document.getElementById('online-container');
-    const createRoomBtn = document.getElementById('create-room-btn');
+    const createRoomBtn = document = document.getElementById('create-room-btn');
     const joinRoomBtn = document.getElementById('join-room-btn');
     const joinRoomInput = document.getElementById('join-room-input');
     const roomIdDisplay = document.getElementById('room-id');
@@ -72,8 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- WebSocket ---
     function connectWebSocket() {
-        const wsHost = window.location.hostname;
-        ws = new WebSocket(`ws://${wsHost}:8080`);
+        // Connect to the Vercel serverless function for WebSockets
+        ws = new WebSocket(`wss://${window.location.hostname}/api/socket`);
 
         ws.onopen = () => {
             console.log('Connected to WebSocket server');
