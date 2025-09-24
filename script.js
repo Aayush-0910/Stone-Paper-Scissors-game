@@ -36,6 +36,53 @@ document.addEventListener('DOMContentLoaded', () => {
     const lobbyEl = document.querySelector('.lobby');
     if (lobbyEl) lobbyEl.appendChild(matchStatusEl);
 
+    // --- Match countdown & UI helpers ---
+    function formatTimeNow() {
+        const d = new Date();
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function appendChatLine(text, from = '', isMe = false) {
+        if (!chatMessages) return;
+        const el = document.createElement('div');
+        el.className = 'chat-line' + (isMe ? ' me' : '');
+        const meta = document.createElement('div');
+        meta.className = 'chat-meta';
+        meta.textContent = from ? `${from} • ${formatTimeNow()}` : formatTimeNow();
+        const body = document.createElement('div');
+        body.className = 'chat-body';
+        body.textContent = text;
+        el.appendChild(meta);
+        el.appendChild(body);
+        chatMessages.appendChild(el);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function showMatchCountdown(seconds = 3, onComplete) {
+        // Reuse existing pre-round animation if present, otherwise create overlay
+        let overlay = document.getElementById('pre-round-animation');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'pre-round-animation';
+            overlay.innerHTML = `<div id="animation-text"></div>`;
+            document.body.appendChild(overlay);
+        }
+        const txt = overlay.querySelector('#animation-text');
+        overlay.style.display = 'flex';
+        let t = seconds;
+        txt.textContent = t;
+        const iv = setInterval(() => {
+            t -= 1;
+            if (t > 0) {
+                txt.textContent = t;
+            } else {
+                clearInterval(iv);
+                overlay.style.display = 'none';
+                if (typeof onComplete === 'function') onComplete();
+            }
+        }, 1000);
+    }
+
     // --- Game State ---
     let playerScore = 0;
     let opponentScore = 0;
@@ -180,24 +227,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'roomCreated':
                         roomId = data.roomId;
                         roomIdDisplay.textContent = roomId;
-                        resultText.textContent = `Room created! Your Room ID is ${roomId}. Share this with your friend. Waiting for another player...`;
+                        resultText.textContent = `Room created! Your Room ID is ${roomId}. Share this with your friend.`;
                         createRoomBtn.style.display = 'none';
                         joinRoomContainer.style.display = 'none';
                         if (chatContainer) chatContainer.classList.remove('hidden');
+                        if (data.opponent && opponentNameDisplay) opponentNameDisplay.textContent = data.opponent;
+                        if (matchStatusEl) matchStatusEl.textContent = `Matched with ${data.opponent || 'Opponent'}`;
+                        // If server signals both players are present immediately, show countdown
+                        if (data.playerCount && data.playerCount >= 2) {
+                            showMatchCountdown(3, () => {
+                                matchStatusEl.textContent = 'Play!';
+                            });
+                        }
                         break;
                     case 'chat':
                         // { type: 'chat', from, text }
-                        if (chatMessages) {
-                            const el = document.createElement('div');
-                            el.className = 'chat-line';
-                            el.textContent = `${data.from}: ${data.text}`;
-                            chatMessages.appendChild(el);
-                            chatMessages.scrollTop = chatMessages.scrollHeight;
-                        }
+                        appendChatLine(data.text, data.from || '');
                         break;
                     case 'playerJoined':
                         resultText.textContent = 'Player 2 has joined. Make your move!';
                         onlineContainer.classList.add('hidden');
+                        if (matchStatusEl) matchStatusEl.textContent = 'Opponent connected — starting soon';
+                        // show a short countdown then enable play
+                        showMatchCountdown(3, () => {
+                            matchStatusEl.textContent = 'Play!';
+                        });
                         break;
                     case 'result':
                         const { winner, choices } = data;
