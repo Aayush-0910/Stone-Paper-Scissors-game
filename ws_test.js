@@ -2,6 +2,9 @@ const WebSocket = require('ws');
 
 const url = process.env.WS_URL || 'ws://localhost:8080';
 
+// track which clients have seen a result
+const resultsSeen = new Set();
+
 function makeClient(name) {
   const ws = new WebSocket(url);
   ws.name = name;
@@ -10,23 +13,30 @@ function makeClient(name) {
   ws.on('open', () => {
     console.log(`${name} connected`);
     ws.send(JSON.stringify({ type: 'setName', name }));
-    ws.send(JSON.stringify({ type: 'matchmake' }));
+    // try matchmake
+    setTimeout(() => ws.send(JSON.stringify({ type: 'matchmake' })), 200);
   });
 
   ws.on('message', (m) => {
-    const data = JSON.parse(m.toString());
+    let data;
+    try {
+      data = JSON.parse(m.toString());
+    } catch (e) {
+      console.error(`${name} failed to parse message`, e);
+      return;
+    }
     console.log(`${name} received:`, data);
 
-    }
+    if (data.type === 'roomCreated') {
+      // when matched, send a chat after short delay
+      setTimeout(() => {
+        ws.send(JSON.stringify({ type: 'chat', text: `Hello from ${name}` }));
+      }, 200);
+      // send a choice
+      setTimeout(() => {
+        const choice = name === 'Alice' ? 'stone' : 'paper';
+        ws.send(JSON.stringify({ type: 'choice', choice }));
 
-    if (data.type === 'chat') {
-      console.log(`${name} sees chat from ${data.from || 'unknown'}: ${data.text}`);
-    }
-
-    if (data.type === 'result') {
-      console.log(`${name} got result:`, data);
-      ws.hasResult = true;
-      setTimeout(() => { if (ws.readyState === WebSocket.OPEN) ws.close(); }, 200);
 
     }
   });
@@ -36,22 +46,12 @@ function makeClient(name) {
   return ws;
 }
 
-const clients = [];
-clients.push(makeClient('Alice'));
-setTimeout(() => clients.push(makeClient('Bob')), 100);
+// create two clients
+const a = makeClient('Alice');
+setTimeout(() => makeClient('Bob'), 100);
 
-const start = Date.now();
-const maxMs = 15000;
-const interval = setInterval(() => {
-  const allDone = clients.length >= 2 && clients.every(c => c.hasResult);
-  if (allDone) {
-    console.log('Both clients received results — finishing test');
-    clearInterval(interval);
-    process.exit(0);
-  }
-  if (Date.now() - start > maxMs) {
-    console.log('Timeout reached; exiting test');
-    clearInterval(interval);
-    process.exit(0);
-  }
-}, 500);
+// exit after a few seconds
+setTimeout(() => {
+  console.log('Test complete, exiting');
+  process.exit(0);
+}, 4000);

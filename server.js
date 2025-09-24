@@ -18,9 +18,15 @@ function generateRoomId() {
 
 function broadcast(roomId, data) {
     if (rooms[roomId]) {
-        rooms[roomId].players.forEach(client => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify(data));
+        rooms[roomId].players.forEach((client, idx) => {
+            try {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(JSON.stringify(data));
+                } else {
+                    console.log(`broadcast: client at index ${idx} in room ${roomId} not open (state=${client.readyState})`);
+                }
+            } catch (err) {
+                console.error(`broadcast: error sending to client ${idx} in room ${roomId}:`, err);
             }
         });
     }
@@ -28,8 +34,7 @@ function broadcast(roomId, data) {
 
 wss.on('connection', ws => {
     console.log('Client connected');
-    let roomId = null;
-    let playerIndex = -1;
+    // roomId & playerIndex are stored on the socket object (ws.roomId, ws.playerIndex)
 
     ws.on('message', message => {
         const data = JSON.parse(message);
@@ -54,6 +59,7 @@ wss.on('connection', ws => {
                         players: [a, b],
                         choices: [null, null]
                     };
+                    // store room info on the socket objects so their message handlers can access them
                     a.roomId = newRoomId; a.playerIndex = 0;
                     b.roomId = newRoomId; b.playerIndex = 1;
                     // notify both players of match
@@ -64,13 +70,14 @@ wss.on('connection', ws => {
                 break;
 
             case 'create':
-                roomId = generateRoomId();
-                playerIndex = 0;
-                rooms[roomId] = {
+                // create a room and attach it to this socket
+                const newId = generateRoomId();
+                rooms[newId] = {
                     players: [ws],
                     choices: [null, null]
                 };
-                ws.roomId = roomId;
+                ws.roomId = newId;
+                ws.playerIndex = 0;
                 ws.send(JSON.stringify({ type: 'roomCreated', roomId }));
                 console.log(`Room ${roomId} created by Player 1`);
                 break;
@@ -78,12 +85,12 @@ wss.on('connection', ws => {
             case 'join':
                 const id = data.roomId;
                 if (rooms[id] && rooms[id].players.length < 2) {
-                    roomId = id;
-                    playerIndex = 1;
-                    rooms[roomId].players.push(ws);
-                    ws.roomId = roomId;
-                    broadcast(roomId, { type: 'playerJoined', playerCount: rooms[roomId].players.length });
-                    console.log(`Player 2 joined Room ${roomId}`);
+                    // attach this socket to the room
+                    rooms[id].players.push(ws);
+                    ws.roomId = id;
+                    ws.playerIndex = 1;
+                    broadcast(id, { type: 'playerJoined', playerCount: rooms[id].players.length });
+                    console.log(`Player 2 joined Room ${id}`);
                 } else {
                     ws.send(JSON.stringify({ type: 'error', message: 'Room is full or does not exist.' }));
                 }
@@ -91,32 +98,38 @@ wss.on('connection', ws => {
 
             case 'chat':
                 // forward chat to other players in room
-                if (roomId && rooms[roomId]) {
+                if (ws.roomId && rooms[ws.roomId]) {
                     const from = ws.playerName || 'Player';
-                    broadcast(roomId, { type: 'chat', from, text: data.text });
+                    broadcast(ws.roomId, { type: 'chat', from, text: data.text });
                 }
                 break;
 
             case 'choice':
-                if (roomId && rooms[roomId] && playerIndex !== -1) {
-                    rooms[roomId].choices[playerIndex] = data.choice;
-                    console.log(`Player ${playerIndex + 1} in room ${roomId} chose ${data.choice}`);
-                    
+                if (ws.roomId && rooms[ws.roomId] && typeof ws.playerIndex === 'number') {
+                    rooms[ws.roomId].choices[ws.playerIndex] = data.choice;
+                    console.log(`choice: playerIndex=${ws.playerIndex} room=${ws.roomId} choice=${data.choice}`);
+
                     // Check if both players have made a choice
-                    if (rooms[roomId].choices[0] && rooms[roomId].choices[1]) {
-                        const [choice1, choice2] = rooms[roomId].choices;
+                    const choices = rooms[ws.roomId].choices;
+                    console.log(`current choices for room ${ws.roomId}:`, choices);
+                    if (choices[0] && choices[1]) {
+                        const [choice1, choice2] = choices;
                         const winner = determineWinner(choice1, choice2);
-                        broadcast(roomId, { type: 'result', winner, choices: rooms[roomId].choices });
-                        console.log(`Game in room ${roomId} finished. Winner: ${winner}`);
+                        console.log(`will broadcast result for room ${ws.roomId} — winner=${winner} choices=${JSON.stringify(choices)}`);
+                        broadcast(ws.roomId, { type: 'result', winner, choices });
+                        console.log(`Game in room ${ws.roomId} finished. Winner: ${winner}`);
+                        // reset choices for next round
+                        rooms[ws.roomId].choices = [null, null];
+                        console.log(`choices for room ${ws.roomId} reset to [null,null]`);
                     }
                 }
                 break;
             
             case 'reset':
-                if (roomId && rooms[roomId]) {
-                    rooms[roomId].choices = [null, null];
-                    broadcast(roomId, { type: 'reset' });
-                    console.log(`Game in room ${roomId} has been reset.`);
+                if (ws.roomId && rooms[ws.roomId]) {
+                    rooms[ws.roomId].choices = [null, null];
+                    broadcast(ws.roomId, { type: 'reset' });
+                    console.log(`Game in room ${ws.roomId} has been reset.`);
                 }
                 break;
         }
@@ -124,15 +137,16 @@ wss.on('connection', ws => {
 
     ws.on('close', () => {
         console.log('Client disconnected');
-        if (roomId && rooms[roomId]) {
-            rooms[roomId].players = rooms[roomId].players.filter(client => client !== ws);
-            if (rooms[roomId].players.length === 0) {
-                delete rooms[roomId];
-                console.log(`Room ${roomId} is empty and has been deleted.`);
+        const rid = ws.roomId;
+        if (rid && rooms[rid]) {
+            rooms[rid].players = rooms[rid].players.filter(client => client !== ws);
+            if (rooms[rid].players.length === 0) {
+                delete rooms[rid];
+                console.log(`Room ${rid} is empty and has been deleted.`);
             } else {
                 // Notify remaining player
-                broadcast(roomId, { type: 'playerLeft' });
-                console.log(`A player left room ${roomId}.`);
+                broadcast(rid, { type: 'playerLeft' });
+                console.log(`A player left room ${rid}.`);
             }
         }
     });
