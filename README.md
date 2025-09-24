@@ -4,19 +4,19 @@ This is a engaging web-based implementation of the classic game "Stone, Paper, S
 
 ## Features
 
-*   **Light & Dark Themes:** Easily switch between a light and dark theme for your visual comfort.
-*   **Personalized Experience:** Set your player name to appear on the scoreboard.
-*   **Multiple Game Types:**
-    *   **Player vs Computer:** Play against the computer.
-    *   **Player vs Player:** Play against a friend on the same computer.
-    *   **Online:** Play against another player online.
-*   **Multiple Game Modes:**
-    *   **Endless:** Play for as long as you like.
-    *   **Best of 3:** The first player to win 2 rounds wins the series.
-    *   **Best of 5:** The first player to win 3 rounds wins the series.
-    *   **Best of 7:** The first player to win 4 rounds wins the series.
-*   **Persistent State:** Your name and theme preference are saved in your browser's local storage.
-*   **Move History:** Keep track of the last few moves made in the game.
+* **Light & Dark Themes:** Easily switch between a light and dark theme for your visual comfort.
+* **Personalized Experience:** Set your player name to appear on the scoreboard.
+* **Multiple Game Types:**
+    * **Player vs Computer:** Play against the computer.
+    * **Player vs Player:** Play against a friend on the same computer.
+    * **Online:** Play against another player online.
+* **Multiple Game Modes:**
+    * **Endless:** Play for as long as you like.
+    * **Best of 3:** The first player to win 2 rounds wins the series.
+    * **Best of 5:** The first player to win 3 rounds wins the series.
+    * **Best of 7:** The first player to win 4 rounds wins the series.
+* **Persistent State:** Your name and theme preference are saved in your browser's local storage.
+* **Move History:** Keep track of the last few moves made in the game.
 *   **Responsive Design:** The game is designed to work well on both desktop and mobile devices.
 
 ## How to Play
@@ -64,3 +64,4 @@ This project is licensed under the MIT License.
 ---
 
 &copy; 2025 Sinha Gaming tech. All rights reserved.
+

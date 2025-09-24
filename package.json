@@ -5,6 +5,7 @@
   "main": "script.js",
   "scripts": {
     "start": "node server.js",
+    "deploy": "npx gh-pages -d .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

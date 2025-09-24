@@ -1,8 +1,16 @@
+const http = require('http');
 const WebSocket = require('ws');
 
-const wss = new WebSocket.Server({ port: 8080 });
+const PORT = process.env.PORT || 8080;
+
+// Create an HTTP server — some hosting platforms require an HTTP server
+// and provide an automatic TLS/proxy in front. We attach the WebSocket
+// server to this HTTP server so it works on those platforms.
+const server = http.createServer();
+const wss = new WebSocket.Server({ server });
 
 const rooms = {};
+const matchQueue = [];
 
 function generateRoomId() {
     return Math.random().toString(36).substring(2, 7);
@@ -28,6 +36,33 @@ wss.on('connection', ws => {
         console.log('Received:', data);
 
         switch (data.type) {
+            case 'setName':
+                ws.playerName = data.name || 'Player';
+                break;
+
+            case 'matchmake':
+                // add to matchmaking queue if not already queued
+                if (!matchQueue.includes(ws)) {
+                    matchQueue.push(ws);
+                }
+                // try to match
+                if (matchQueue.length >= 2) {
+                    const a = matchQueue.shift();
+                    const b = matchQueue.shift();
+                    const newRoomId = generateRoomId();
+                    rooms[newRoomId] = {
+                        players: [a, b],
+                        choices: [null, null]
+                    };
+                    a.roomId = newRoomId; a.playerIndex = 0;
+                    b.roomId = newRoomId; b.playerIndex = 1;
+                    // notify both players of match
+                    a.send(JSON.stringify({ type: 'roomCreated', roomId: newRoomId, opponent: b.playerName || 'Opponent' }));
+                    b.send(JSON.stringify({ type: 'roomCreated', roomId: newRoomId, opponent: a.playerName || 'Opponent' }));
+                    console.log(`Matched players into room ${newRoomId}`);
+                }
+                break;
+
             case 'create':
                 roomId = generateRoomId();
                 playerIndex = 0;
@@ -51,6 +86,14 @@ wss.on('connection', ws => {
                     console.log(`Player 2 joined Room ${roomId}`);
                 } else {
                     ws.send(JSON.stringify({ type: 'error', message: 'Room is full or does not exist.' }));
+                }
+                break;
+
+            case 'chat':
+                // forward chat to other players in room
+                if (roomId && rooms[roomId]) {
+                    const from = ws.playerName || 'Player';
+                    broadcast(roomId, { type: 'chat', from, text: data.text });
                 }
                 break;
 
@@ -107,4 +150,6 @@ function determineWinner(choice1, choice2) {
     return 'player2';
 }
 
-console.log('WebSocket server started on port 8080');
+server.listen(PORT, () => {
+    console.log(`WebSocket server started on port ${PORT}`);
+});
