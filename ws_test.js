@@ -25,6 +25,15 @@ function makeClient(name) {
         ws.send(JSON.stringify({ type: 'choice', choice }));
       }, 400);
     }
+    // Log chat/result explicitly and keep the connection open until result arrives
+    if (data.type === 'chat') {
+      console.log(`${name} sees chat from ${data.from}: ${data.text}`);
+    }
+    if (data.type === 'result') {
+      console.log(`${name} got result:`, data);
+      // Close after a short delay so both clients can receive the message
+      setTimeout(() => ws.close(), 200);
+    }
   });
   ws.on('close', () => console.log(`${name} closed`));
   ws.on('error', (e) => console.error(`${name} error`, e));
@@ -36,7 +45,8 @@ const a = makeClient('Alice');
 setTimeout(() => makeClient('Bob'), 100);
 
 // exit after a few seconds
+// exit after a longer timeout in case of slow networks
 setTimeout(() => {
   console.log('Test complete, exiting');
   process.exit(0);
-}, 4000);
+}, 8000);
