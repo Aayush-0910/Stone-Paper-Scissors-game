@@ -30,6 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatMessages = document.getElementById('chat-messages');
     const chatInput = document.getElementById('chat-input');
     const chatSendBtn = document.getElementById('chat-send');
+    const matchStatusEl = document.createElement('div');
+    matchStatusEl.className = 'match-status';
+    // try to append near lobby actions if present
+    const lobbyEl = document.querySelector('.lobby');
+    if (lobbyEl) lobbyEl.appendChild(matchStatusEl);
 
     // --- Game State ---
     let playerScore = 0;
@@ -94,7 +99,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const name = prompt('Enter your display name', 'Player') || 'Player';
             safeSend({ type: 'setName', name });
             safeSend({ type: 'matchmake' });
-            setWsStatus('connecting', 'Searching for match...');
+            // show a friendly searching state
+            if (matchStatusEl) matchStatusEl.textContent = 'Searching for a match...';
+            setWsStatus('connecting');
         });
         chatSendBtn?.addEventListener('click', () => {
             const text = chatInput.value.trim();
@@ -109,6 +116,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }
             chatInput.value = '';
+        });
+
+        // allow Enter to send chat
+        chatInput?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                chatSendBtn?.click();
+            }
         });
     }
 

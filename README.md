@@ -90,3 +90,30 @@ This project separates frontend (static files) and backend (WebSocket server). G
     - Open the GitHub Pages URL and the browser console to confirm the client connects to your `wss://` backend.
 
 If you want, I can add a `deploy` script to `package.json` and a GitHub Actions workflow to automate publishing the frontend to `gh-pages` on every push to `main`. Paste the backend URL and tell me if you want automation and I'll add those files for you.
+
+---
+
+## Backend Deployment — Railway (detailed steps)
+
+If you'd like me to deploy the backend for you, here are the exact steps I (or you) will follow:
+
+1. Create a Railway account at https://railway.app and connect it to your GitHub account.
+
+2. Create a new Railway project and select "Deploy from GitHub".
+
+3. Choose this repository and the `Changes` (or `main`) branch.
+
+4. Railway will detect `package.json` and run `npm install` and `npm start`. The included `Procfile` makes the process explicit (`web: node server.js`).
+
+5. After a successful deployment, Railway provides a public HTTPS URL (e.g. `https://my-rps.up.railway.app`).
+
+6. Construct the WebSocket URL: `wss://my-rps.up.railway.app` and set it in `script.js` as `WS_CONFIG.productionUrl`.
+
+7. Commit and push the change to update the frontend to use the hosted backend.
+
+Notes:
+* Make sure Railway exposes the project publicly and that you copy the root hostname (not the internal Railway dashboard URL).
+
+* GitHub Pages serves the frontend over HTTPS; use `wss://` to avoid mixed-content blocks.
+
+* If you prefer I can attempt the deployment for you using the repo integration; just confirm and I'll proceed.
