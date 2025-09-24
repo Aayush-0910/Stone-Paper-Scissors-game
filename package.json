@@ -1,0 +1,25 @@
+{
+  "name": "stone-paper-scissors-game",
+  "version": "1.0.0",
+  "description": "This is a professional and engaging web-based implementation of the classic game \"Stone, Paper, Scissors\". It's built with modern web technologies and features a clean, responsive user interface.",
+  "main": "script.js",
+  "scripts": {
+    "start": "node server.js",
+    "deploy": "npx gh-pages -d .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aayush-0910/Stone-Paper-Scissors-game.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Aayush-0910/Stone-Paper-Scissors-game/issues"
+  },
+  "homepage": "https://github.com/Aayush-0910/Stone-Paper-Scissors-game#readme",
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}

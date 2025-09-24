@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A professional and engaging Stone Paper Scissors game.">
+    <title>RPS Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:;base64,iVBORw0KGgo="> <!-- Placeholder favicon -->
+</head>
+<body class="dark-theme">
+
+    <div id="modal-instructions" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Welcome to RPS Pro!</h2>
+            <p>This is a  classic Rock, Paper, Scissors game.</p>
+            <h3>Features:</h3>
+            <ul>
+                <li><strong>Themes:</strong> Switch between light and dark themes using the toggle in the top-right corner.</li>
+                <li><strong>Player Name:</strong> Enter your name to personalize the scoreboard.</li>
+                <li><strong>Game Modes:</strong> Choose from Endless, Best of 5, or Best of 7 game modes.</li>
+                <li><strong>Persistent Scores:</strong> Your scores are saved, so you can continue your game later.</li>
+            </ul>
+            <h3>How to Play:</h3>
+            <p>1. Enter your name and choose a game mode.</p>
+            <p>2. Click on one of the cards (Rock, Paper, or Scissors) to make your choice.</p>
+            <p>3. The computer will make its choice, and the winner will be announced.</p>
+            <p>4. Click "Play Again" to start a new round.</p>
+        </div>
+    </div>
+
+    <div id="series-winner-banner" class="hidden">
+        <p id="series-winner-text"></p>
+    </div>
+
+    <div class="top-bar">
+        <button id="help-button">Help</button>
+        <div id="ws-status" title="WebSocket status" class="ws-status">
+            <span id="ws-dot" class="ws-dot"></span>
+            <span id="ws-status-text" class="ws-status-text">disconnected</span>
+            <span id="ws-queue" class="ws-queue hidden">Queued: <span id="ws-queue-count">0</span></span>
+            <span id="ws-reconnect" class="ws-reconnect hidden">Attempts: <span id="ws-reconnect-count">0</span></span>
+            <button id="ws-retry-btn" class="ws-retry hidden">Retry</button>
+        </div>
+        <div class="theme-switcher">
+            <div id="theme-switcher-container">
+                <svg id="sun-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <svg id="moon-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="logo">
+            <h1>RPS Pro</h1>
+        </div>
+    </header>
+
+    <main class="game-wrapper">
+        <div class="settings-panel">
+            <div class="game-type-container">
+                <label for="game-type">Game Type:</label>
+                <select id="game-type">
+                    <option value="pvc">Player vs Computer</option>
+                    <option value="pvp">Player vs Player</option>
+                    <option value="online">Online</option>
+                </select>
+            </div>
+            <div id="online-container" class="hidden">
+                <div class="lobby">
+                    <div class="room-id-display">Room ID: <span id="room-id"></span></div>
+                    <div class="lobby-actions">
+                        <button id="create-room-btn" class="primary">Create Room</button>
+                        <button id="matchmake-btn" class="primary">Quick Match</button>
+                    </div>
+                    <div class="join-room-container">
+                        <input type="text" id="join-room-input" placeholder="Enter Room ID">
+                        <button id="join-room-btn">Join Room</button>
+                    </div>
+                    <div class="chat-container hidden" id="chat-container">
+                        <div id="chat-messages" class="chat-messages"></div>
+                        <div class="chat-input">
+                            <input id="chat-input" type="text" placeholder="Say something...">
+                            <button id="chat-send">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="player-name-container">
+                <label for="player-name">Player 1 Name:</label>
+                <input type="text" id="player-name" value="Player 1">
+            </div>
+            <div id="player2-name-container" class="player-name-container hidden">
+                <label for="player2-name">Player 2 Name:</label>
+                <input type="text" id="player2-name" value="Player 2">
+            </div>
+            <div class="game-mode-container">
+                <label for="game-mode">Game Mode:</label>
+                <select id="game-mode">
+                    <option value="endless">Endless</option>
+                    <option value="bestOf3">Best of 3</option>
+                    <option value="bestOf5">Best of 5</option>
+                    <option value="bestOf7">Best of 7</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="game-container">
+            <div class="score-board">
+                <div class="score-container player-score-container">
+                    <h2 id="player-name-display">Player 1</h2>
+                    <p id="player-score">0</p>
+                </div>
+                <div class="vs-separator">VS</div>
+                <div class="score-container opponent-score-container">
+                    <h2 id="opponent-name-display">Computer</h2>
+                    <p id="opponent-score">0</p>
+                </div>
+            </div>
+
+            <div id="choices-container" class="choices-container">
+                <div class="choices">
+                    <div id="stone" class="choice-card">
+                        <div class="choice-card-inner">
+                            <div class="choice-card-front">
+                                <img src="https://img.icons8.com/ios-filled/100/000000/hand-rock.png" alt="Stone">
+                            </div>
+                            <div class="choice-card-back">
+                                <span>Stone</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="paper" class="choice-card">
+                        <div class="choice-card-inner">
+                            <div class="choice-card-front">
+                                <img src="https://img.icons8.com/ios-filled/100/000000/hand.png" alt="Paper">
+                            </div>
+                            <div class="choice-card-back">
+                                <span>Paper</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="scissors" class="choice-card">
+                        <div class="choice-card-inner">
+                            <div class="choice-card-front">
+                                <img src="https://img.icons8.com/ios-filled/100/000000/hand-scissors.png" alt="Scissors">
+                            </div>
+                            <div class="choice-card-back">
+                                <span>Scissors</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-container">
+                <p id="result">Make your move!</p>
+                <p id="opponent-choice-display"></p>
+            </div>
+
+            <button id="play-again" class="hidden">Play Again!</button>
+        </div>
+
+        <div class="history-container">
+            <h3>Move History</h3>
+            <ul id="history-list"></ul>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Sinha Gaming tech. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
