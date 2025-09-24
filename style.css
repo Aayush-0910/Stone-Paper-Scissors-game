@@ -372,6 +372,41 @@ footer {
     font-size: 0.9rem;
 }
 
+/* WebSocket status UI */
+.ws-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: inherit;
+}
+.ws-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #bbb;
+    display: inline-block;
+}
+.ws-status-text {
+    text-transform: lowercase;
+}
+.ws-queue, .ws-reconnect {
+    font-size: 0.8rem;
+    color: inherit;
+    margin-left: 0.25rem;
+}
+.ws-retry {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,0.12);
+    background: transparent;
+    cursor: pointer;
+}
+.ws-retry:hover {
+    transform: scale(1.02);
+}
+.hidden { display: none; }
+
 @media (max-width: 768px) {
     header .logo h1 {
         font-size: 2rem;
