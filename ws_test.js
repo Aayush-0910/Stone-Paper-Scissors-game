@@ -5,51 +5,18 @@ const url = process.env.WS_URL || 'ws://localhost:8080';
 function makeClient(name) {
   const ws = new WebSocket(url);
   ws.name = name;
+  ws.hasResult = false;
+
   ws.on('open', () => {
     console.log(`${name} connected`);
     ws.send(JSON.stringify({ type: 'setName', name }));
-    // try matchmake
-    setTimeout(() => ws.send(JSON.stringify({ type: 'matchmake' })), 200);
+    ws.send(JSON.stringify({ type: 'matchmake' }));
   });
+
   ws.on('message', (m) => {
     const data = JSON.parse(m.toString());
     console.log(`${name} received:`, data);
-<<<<<<< Updated upstream
-    if (data.type === 'roomCreated') {
-      // when matched, send a chat after short delay
-      setTimeout(() => {
-        ws.send(JSON.stringify({ type: 'chat', text: `Hello from ${name}` }));
-      }, 200);
-      // send a choice
-      setTimeout(() => {
-        const choice = name === 'Alice' ? 'stone' : 'paper';
-        ws.send(JSON.stringify({ type: 'choice', choice }));
-      }, 400);
-=======
 
-    if (data.type === 'roomCreated' || data.type === 'playerJoined') {
-      // send chat + choice immediately (with retries) and log sends
-      const sendJson = (obj) => {
-        try {
-          console.log(`${name} sending:`, obj);
-          ws.send(JSON.stringify(obj));
-        } catch (e) {
-          console.error(`${name} send failed`, e);
-        }
-      };
-
-      const chatObj = { type: 'chat', text: `Hello from ${name}` };
-      // send chat once and retry a couple of times
-      for (let i = 0; i < 3; i++) {
-        setTimeout(() => sendJson(chatObj), 50 + i * 120);
-      }
-
-      const choice = name === 'Alice' ? 'stone' : 'paper';
-      const choiceObj = { type: 'choice', choice };
-      // send the choice a few times to account for timing
-      for (let i = 0; i < 4; i++) {
-        setTimeout(() => sendJson(choiceObj), 120 + i * 150);
-      }
     }
 
     if (data.type === 'chat') {
@@ -60,20 +27,31 @@ function makeClient(name) {
       console.log(`${name} got result:`, data);
       ws.hasResult = true;
       setTimeout(() => { if (ws.readyState === WebSocket.OPEN) ws.close(); }, 200);
->>>>>>> Stashed changes
+
     }
   });
+
   ws.on('close', () => console.log(`${name} closed`));
   ws.on('error', (e) => console.error(`${name} error`, e));
   return ws;
 }
 
-// create two clients
-const a = makeClient('Alice');
-setTimeout(() => makeClient('Bob'), 100);
+const clients = [];
+clients.push(makeClient('Alice'));
+setTimeout(() => clients.push(makeClient('Bob')), 100);
 
-// exit after a few seconds
-setTimeout(() => {
-  console.log('Test complete, exiting');
-  process.exit(0);
-}, 4000);
+const start = Date.now();
+const maxMs = 15000;
+const interval = setInterval(() => {
+  const allDone = clients.length >= 2 && clients.every(c => c.hasResult);
+  if (allDone) {
+    console.log('Both clients received results — finishing test');
+    clearInterval(interval);
+    process.exit(0);
+  }
+  if (Date.now() - start > maxMs) {
+    console.log('Timeout reached; exiting test');
+    clearInterval(interval);
+    process.exit(0);
+  }
+}, 500);
