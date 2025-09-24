@@ -6,8 +6,23 @@ const PORT = process.env.PORT || 8080;
 // Create an HTTP server — some hosting platforms require an HTTP server
 // and provide an automatic TLS/proxy in front. We attach the WebSocket
 // server to this HTTP server so it works on those platforms.
-const server = http.createServer();
-const wss = new WebSocket.Server({ server });
+// Simple HTTP handler so the host can respond to health checks
+const server = http.createServer((req, res) => {
+    if (req.method === 'GET' && req.url === '/api/socket') {
+        // Respond to HTTP GET requests to the WebSocket endpoint
+        res.writeHead(426, { 'Content-Type': 'text/plain', 'Upgrade': 'WebSocket' });
+        res.end('This endpoint is for WebSocket connections only.');
+        return;
+    }
+    if (req.method === 'GET' && (req.url === '/' || req.url === '/health')) {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end('ok');
+        return;
+    }
+    res.writeHead(404);
+    res.end('Not found');
+});
+const wss = new WebSocket.Server({ server, path: '/api/socket' });
 
 const rooms = {};
 const matchQueue = [];
@@ -28,8 +43,10 @@ function broadcast(roomId, data) {
 
 wss.on('connection', ws => {
     console.log('Client connected');
-    let roomId = null;
-    let playerIndex = -1;
+    // prefer storing room/player on the socket object so matchmaking (which
+    // manipulates other sockets) is always visible to this connection's handlers
+    ws.roomId = null;
+    ws.playerIndex = -1;
 
     ws.on('message', message => {
         const data = JSON.parse(message);
@@ -54,6 +71,7 @@ wss.on('connection', ws => {
                         players: [a, b],
                         choices: [null, null]
                     };
+                    // set metadata on the socket objects themselves
                     a.roomId = newRoomId; a.playerIndex = 0;
                     b.roomId = newRoomId; b.playerIndex = 1;
                     // notify both players of match
@@ -75,18 +93,19 @@ wss.on('connection', ws => {
                 console.log(`Room ${roomId} created by Player 1`);
                 break;
 
-            case 'join':
+            case 'join': {
                 const id = data.roomId;
                 if (rooms[id] && rooms[id].players.length < 2) {
-                    roomId = id;
-                    playerIndex = 1;
-                    rooms[roomId].players.push(ws);
-                    ws.roomId = roomId;
-                    broadcast(roomId, { type: 'playerJoined', playerCount: rooms[roomId].players.length });
-                    console.log(`Player 2 joined Room ${roomId}`);
+                    ws.roomId = id;
+                    ws.playerIndex = 1;
+                    rooms[id].players.push(ws);
+                    broadcast(id, { type: 'playerJoined', playerCount: rooms[id].players.length });
+                    console.log(`Player 2 joined Room ${id}`);
                 } else {
                     ws.send(JSON.stringify({ type: 'error', message: 'Room is full or does not exist.' }));
                 }
+            }
+                break;
                 break;
 
             case 'chat':
@@ -97,19 +116,25 @@ wss.on('connection', ws => {
                 }
                 break;
 
-            case 'choice':
-                if (roomId && rooms[roomId] && playerIndex !== -1) {
-                    rooms[roomId].choices[playerIndex] = data.choice;
-                    console.log(`Player ${playerIndex + 1} in room ${roomId} chose ${data.choice}`);
-                    
+            case 'choice': {
+                const rid = ws.roomId;
+                const pidx = typeof ws.playerIndex === 'number' ? ws.playerIndex : -1;
+                if (rid && rooms[rid] && pidx !== -1) {
+                    rooms[rid].choices[pidx] = data.choice;
+                    console.log(`Player ${pidx + 1} in room ${rid} chose ${data.choice}`);
+
                     // Check if both players have made a choice
-                    if (rooms[roomId].choices[0] && rooms[roomId].choices[1]) {
-                        const [choice1, choice2] = rooms[roomId].choices;
+                    if (rooms[rid].choices[0] && rooms[rid].choices[1]) {
+                        const [choice1, choice2] = rooms[rid].choices;
                         const winner = determineWinner(choice1, choice2);
-                        broadcast(roomId, { type: 'result', winner, choices: rooms[roomId].choices });
-                        console.log(`Game in room ${roomId} finished. Winner: ${winner}`);
+                        broadcast(rid, { type: 'result', winner, choices: rooms[rid].choices });
+                        console.log(`Game in room ${rid} finished. Winner: ${winner}`);
+                        // reset choices for next round
+                        rooms[rid].choices = [null, null];
                     }
                 }
+            }
+                break;
                 break;
             
             case 'reset':
@@ -124,15 +149,16 @@ wss.on('connection', ws => {
 
     ws.on('close', () => {
         console.log('Client disconnected');
-        if (roomId && rooms[roomId]) {
-            rooms[roomId].players = rooms[roomId].players.filter(client => client !== ws);
-            if (rooms[roomId].players.length === 0) {
-                delete rooms[roomId];
-                console.log(`Room ${roomId} is empty and has been deleted.`);
+        const rid = ws.roomId;
+        if (rid && rooms[rid]) {
+            rooms[rid].players = rooms[rid].players.filter(client => client !== ws);
+            if (rooms[rid].players.length === 0) {
+                delete rooms[rid];
+                console.log(`Room ${rid} is empty and has been deleted.`);
             } else {
                 // Notify remaining player
-                broadcast(roomId, { type: 'playerLeft' });
-                console.log(`A player left room ${roomId}.`);
+                broadcast(rid, { type: 'playerLeft' });
+                console.log(`A player left room ${rid}.`);
             }
         }
     });

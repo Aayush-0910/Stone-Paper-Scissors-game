@@ -73,7 +73,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- WebSocket ---
     function connectWebSocket() {
         // Connect to the Vercel serverless function for WebSockets
-        ws = new WebSocket(`wss://${window.location.hostname}/api/socket`);
+        const protocol = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'ws' : 'wss';
+        const host = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? window.location.hostname : 'web-production-59aa.up.railway.app';
+        ws = new WebSocket(`${protocol}://${host}/api/socket`);
 
         ws.onopen = () => {
             console.log('Connected to WebSocket server');
