@@ -17,11 +17,6 @@ function makeClient(name) {
     const data = JSON.parse(m.toString());
     console.log(`${name} received:`, data);
 
-    if (data.type === 'roomCreated' || data.type === 'playerJoined') {
-      // send chat + choice immediately
-      ws.send(JSON.stringify({ type: 'chat', text: `Hello from ${name}` }));
-      const choice = name === 'Alice' ? 'stone' : 'paper';
-      setTimeout(() => ws.send(JSON.stringify({ type: 'choice', choice })), 50);
     }
 
     if (data.type === 'chat') {
@@ -32,6 +27,7 @@ function makeClient(name) {
       console.log(`${name} got result:`, data);
       ws.hasResult = true;
       setTimeout(() => { if (ws.readyState === WebSocket.OPEN) ws.close(); }, 200);
+
     }
   });
 
