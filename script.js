@@ -104,7 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set `productionUrl` to your hosted WebSocket server (must include ws:// or wss://)
     // Example: 'wss://my-ws-host.example.com'
     const WS_CONFIG = {
-        productionUrl: '' , // <-- set this before deploying to production
+        // Point the client to the hosted Railway WebSocket server (no trailing slash)
+        // Example: 'wss://my-app.up.railway.app'
+        productionUrl: 'wss://web-production-86242.up.railway.app',
         // If true, the client will attempt reconnects even when productionUrl is set.
         allowAutoReconnectInProd: true
     };
